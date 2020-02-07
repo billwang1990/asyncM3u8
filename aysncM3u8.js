@@ -54,9 +54,14 @@ class AsyncM3u8 {
             } else {
                 const url = URL.parse(m3u8Url);
                 const tmp = url.path.split('/');
-                const path = tmp.slice(0, tmp.length - 1).join('/') + '/' + t;
                 const host = `${url.protocol}//${url.host}`;
-                return host + path;
+                if (t.startsWith('/')) {
+                    return host + t;
+                } else {
+                    const path = tmp.slice(0, tmp.length - 1).join('/') + '/' + t;
+                    const host = `${url.protocol}//${url.host}`;
+                    return host + path;
+                }
             }
         })
     }

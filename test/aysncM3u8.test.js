@@ -38,6 +38,10 @@ describe('Testing async m38u downloader', () => {
             const content = '#EXTM3U\n#EXT-X-VERSION: 3\n#EXT-X-TARGETDURATION: 8\n#EXT-X-MEDIA-SEQUENCE: 0\n#EXTINF: 4.166667,\n93431e0beee000000.ts\n#EXTINF: 6.250000,\n#EXT-X-ENDLIST';
             expect(aysncM3u8.parse(content, m3u8LinkForTesting)).toEqual(['https://bitdash-a.akamaihd.net/content/MI201109210084_1/m3u8s/93431e0beee000000.ts'])
         });
+        it('should remove the unnecessary slashes from the content' , () => {
+            const content = '#EXTM3U\n#EXT-X-VERSION: 3\n#EXT-X-TARGETDURATION: 8\n#EXT-X-MEDIA-SEQUENCE: 0\n#EXTINF: 4.166667,\n/NOTE_SLASH/93431e0beee000000.ts\n#EXTINF: 6.250000,\n#EXT-X-ENDLIST';
+            expect(aysncM3u8.parse(content, m3u8LinkForTesting)).toEqual(['https://bitdash-a.akamaihd.net/NOTE_SLASH/93431e0beee000000.ts'])
+        });
         it('should ignore the original m3u8 url if the ts url contain their host path', () => {
             const m3u8Url = 'http://foo.bar.com';
             const content = '#EXTM3U\n#EXT-X-VERSION: 3\n#EXT-X-TARGETDURATION: 8\n#EXT-X-MEDIA-SEQUENCE: 0\n#EXTINF: 4.166667,\nhttp://a.b.com/93431e0beee000000.ts\n#EXTINF: 6.250000,\n#EXT-X-ENDLIST';
