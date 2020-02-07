@@ -1,8 +1,6 @@
 const AysncM3u8 = require('../aysncM3u8');
-const request = require('request');
 const fs = require('fs');
 
-jest.mock('request');
 jest.mock('fs');
 
 const m3u8LinkForTesting = 'https://bitdash-a.akamaihd.net/content/MI201109210084_1/m3u8s/f08e80da-bf1d-4e3d-8899-f0f6155f6efa_video_180_250000.m3u8';
@@ -12,7 +10,7 @@ describe('Testing async m38u downloader', () => {
     let aysncM3u8;
     beforeEach(() => {
         aysncM3u8 = new AysncM3u8(m3u8LinkForTesting);
-        request.get.mockReset();
+        aysncM3u8.limitedRequest = jest.fn();
         fs.writeFile.mockReset();
     });
 
@@ -27,8 +25,8 @@ describe('Testing async m38u downloader', () => {
         })
         it('should send a get request', () => {
             aysncM3u8.downloadM3u8(m3u8LinkForTesting);
-            expect(request.get.mock.calls[0][0]).toEqual(m3u8LinkForTesting);
-            expect(typeof request.get.mock.calls[0][1]).toEqual('function');
+            expect(aysncM3u8.limitedRequest.mock.calls[0][0]).toEqual(m3u8LinkForTesting);
+            expect(typeof aysncM3u8.limitedRequest.mock.calls[0][1]).toEqual('function');
         })
     });
     describe('parse function', () => {
@@ -49,13 +47,12 @@ describe('Testing async m38u downloader', () => {
     describe('downloadTs function', () => {
         it('should send a request with expect params for ts file downloading', () => {            
             aysncM3u8.downloadTs(['http://whatever.com/xx.ts'], 'whateverFolder');
-            expect(request.get.mock.calls[0][0]).toEqual({ "encoding": null, "headers": { "User-Agent": "Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 6.0)" }, "method": "GET", "timeout": 100000, "url": "http://whatever.com/xx.ts" });
+            expect(aysncM3u8.limitedRequest.mock.calls[0][0]).toEqual({ "encoding": null, "method": "GET", "timeout": 100000, "url": "http://whatever.com/xx.ts" });
         });
     });
     describe('convertTsToMP4 function', () => {
         it('should combine all the ts file name into filelist.txt', () => {
             aysncM3u8.convertTsToMP4(['a.ts', 'b.ts', 'c.ts'], 'whateverFolder');
-    
             expect(fs.writeFile.mock.calls[0][0]).toEqual(__dirname.substring(0, __dirname.lastIndexOf('/')) + '/whateverFolder/filelist.txt');
             expect(fs.writeFile.mock.calls[0][1]).toEqual('file a.ts\nfile b.ts\nfile c.ts');
         });

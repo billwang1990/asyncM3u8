@@ -3,7 +3,11 @@ const URL = require('url');
 const md5 = require('md5');
 const fs = require('fs');
 const path = require('path');
+const Bottleneck = require('bottleneck');
 
+const requestLimiter = new Bottleneck({
+    minTime: 333 //one request per 333ms
+});
 
 class AsyncM3u8 {
     constructor(url) {
@@ -13,6 +17,9 @@ class AsyncM3u8 {
         const folder = `${this.downloadPath}/${md5(this.m3u8Url)}`;
         fs.mkdirSync(folder, { recursive: true });
         this.folder = folder;
+
+        const limitedRequest = requestLimiter.wrap(request.get);
+        this.limitedRequest = limitedRequest;
     }
 
     async start() {
@@ -26,7 +33,7 @@ class AsyncM3u8 {
             throw new Error('url is invalid');
         }
         return new Promise((resolve, reject) => {
-            request.get(url, (err, res, body) => {
+            this.limitedRequest(url, (err, res, body) => {
                 if (err) {
                     reject(err);
                 }
@@ -36,7 +43,7 @@ class AsyncM3u8 {
     }
 
     parse(content, m3u8Url) {
-        console.log('start parse m3u8 content');
+        console.log('Start parse m3u8 content');
         const tsList = content.match(/((http|https):\/\/.*)|(.+\.ts)/g);
         if (!tsList) {
             throw new Error('content type is invalid');
@@ -56,23 +63,20 @@ class AsyncM3u8 {
 
     async downloadTs(tsURLList, folder) {
         console.log('start download ts files');
-
-        const all = tsURLList.map((t) => {
+        const mapToRequestPromise = (link) => {
             return new Promise((resolve, reject) => {
                 const opt = {
                     method: 'GET',
-                    url: t,
+                    url: link,
                     timeout: 100000,
-                    headers: {
-                        'User-Agent': 'Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 6.0)'
-                    },
                     encoding: null
                 };
-                request.get(opt, (err, response, buff) => {
+                this.limitedRequest(opt, (err, response, buff) => {
+                    console.log('Complete ', link);
                     if (err) {
                         reject(err);
                     } else if (response.statusCode === 200) {
-                        const tmp = t.split('/');
+                        const tmp = link.split('/');
                         const fileName = tmp[tmp.length - 1];
                         const filePath = `${folder}/${fileName}`;
 
@@ -87,7 +91,8 @@ class AsyncM3u8 {
                     }
                 });
             });
-        });
+        }
+        const all = tsURLList.map(mapToRequestPromise);
         const downloadedFiles = await Promise.all(all);
         return downloadedFiles;
     }
