@@ -1,6 +1,7 @@
 .vscode
 node_modules/
 lib/
+download/*
 
 package-lock.json
 yarn.lock

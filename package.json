@@ -4,7 +4,8 @@
   "description": "Async m3u8 downloader for NodeJS",
   "main": "index.js",
   "scripts": {
-    "test": "test"
+    "test": "jest --watch",
+    "start": "node ./index.js"
   },
   "repository": {
     "type": "git",
@@ -22,5 +23,8 @@
   "devDependencies": {
     "eslint": "^6.8.0",
     "jest": "^25.1.0"
+  },
+  "dependencies": {
+    "md5": "^2.2.1"
   }
 }
