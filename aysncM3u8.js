@@ -12,13 +12,16 @@ const requestLimiter = new Bottleneck({
 });
 
 class AsyncM3u8 {
-    constructor(url) {
+    constructor(url, downloadPath) {
         this.m3u8Url = url;
-        this.downloadPath = './download';
 
-        const folder = `${this.downloadPath}/${md5(this.m3u8Url)}`;
-        fs.mkdirSync(folder, { recursive: true });
-        this.folder = folder;
+        const videoPath = path.join(downloadPath, md5(url));
+
+        if (!fs.existsSync(videoPath)) {
+            fs.mkdirSync(videoPath, { recursive: true });
+        }
+
+        this.folder = videoPath;
 
         const limitedRequest = requestLimiter.wrap(request.get);
         this.limitedRequest = limitedRequest;
@@ -90,9 +93,9 @@ class AsyncM3u8 {
                     } else if (response.statusCode === 200) {
                         const tmp = link.split('/');
                         const fileName = tmp[tmp.length - 1];
-                        const filePath = `${folder}/${fileName}`;
+                        const filePath = path.join(folder, fileName);
 
-                        fs.writeFile(path.join(__dirname, filePath), buff, (writeErr) => {
+                        fs.writeFile(filePath, buff, (writeErr) => {
                             if (writeErr) {
                                 reject(writeErr);
                             } else {
@@ -115,8 +118,7 @@ class AsyncM3u8 {
             return `file ${t}`
         }).join('\n');
 
-        const filelistPath = path.join(__dirname, `${folder}/filelist.txt`);
-
+        const filelistPath = path.join(folder, 'filelist.txt');
         await new Promise((resolve, reject) => {
             fs.writeFile(filelistPath, fileContent, (writeErr) => {
                 if (writeErr) {
@@ -127,7 +129,7 @@ class AsyncM3u8 {
                 }
             });
         });
-        const mp4Path = path.join(__dirname, `${folder}/output.mp4`);
+        const mp4Path = path.join(folder, `output.mp4`);
         await exec(`ffmpeg -f concat -safe 0 -i ${filelistPath}  -acodec copy -vcodec copy -absf aac_adtstoasc ${mp4Path}`);
         return mp4Path;
     }

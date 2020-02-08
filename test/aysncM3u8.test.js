@@ -9,7 +9,7 @@ describe('Testing async m38u downloader', () => {
 
     let aysncM3u8;
     beforeEach(() => {
-        aysncM3u8 = new AysncM3u8(m3u8LinkForTesting);
+        aysncM3u8 = new AysncM3u8(m3u8LinkForTesting, './fakepath');
         aysncM3u8.limitedRequest = jest.fn();
         fs.writeFile.mockReset();
     });
@@ -57,7 +57,7 @@ describe('Testing async m38u downloader', () => {
     describe('convertTsToMP4 function', () => {
         it('should combine all the ts file name into filelist.txt', () => {
             aysncM3u8.convertTsToMP4(['a.ts', 'b.ts', 'c.ts'], 'whateverFolder');
-            expect(fs.writeFile.mock.calls[0][0]).toEqual(__dirname.substring(0, __dirname.lastIndexOf('/')) + '/whateverFolder/filelist.txt');
+            expect(fs.writeFile.mock.calls[0][0]).toEqual('whateverFolder/filelist.txt');
             expect(fs.writeFile.mock.calls[0][1]).toEqual('file a.ts\nfile b.ts\nfile c.ts');
         });
     })
