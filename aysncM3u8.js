@@ -4,6 +4,8 @@ const md5 = require('md5');
 const fs = require('fs');
 const path = require('path');
 const Bottleneck = require('bottleneck');
+const exec = require('child_process').exec; 
+const cliProgress = require('cli-progress');
 
 const requestLimiter = new Bottleneck({
     minTime: 333 //one request per 333ms
@@ -26,6 +28,8 @@ class AsyncM3u8 {
         const content = await this.downloadM3u8(this.m3u8Url);
         const tsList = this.parse(content, this.m3u8Url);
         const result = await this.downloadTs(tsList, this.folder);
+        const mp4Path = await this.convertTsToMP4(result, this.folder);
+        console.log('Output video path is: ', mp4Path);
     }
 
     downloadM3u8(url) {
@@ -46,7 +50,7 @@ class AsyncM3u8 {
         console.log('Start parse m3u8 content');
         const tsList = content.match(/((http|https):\/\/.*)|(.+\.ts)/g);
         if (!tsList) {
-            throw new Error('content type is invalid');
+            throw new Error(`content type is invalid: ${content}`);
         }
         return tsList.map((t) => {
             if (t.startsWith('http')) {
@@ -67,7 +71,10 @@ class AsyncM3u8 {
     }
 
     async downloadTs(tsURLList, folder) {
-        console.log('start download ts files');
+        console.log('Start download ts files');
+        const bar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
+        bar.start(tsURLList.length, 0);
+
         const mapToRequestPromise = (link) => {
             return new Promise((resolve, reject) => {
                 const opt = {
@@ -77,7 +84,7 @@ class AsyncM3u8 {
                     encoding: null
                 };
                 this.limitedRequest(opt, (err, response, buff) => {
-                    console.log('Complete ', link);
+                    // console.log('Complete ', link);
                     if (err) {
                         reject(err);
                     } else if (response.statusCode === 200) {
@@ -87,9 +94,9 @@ class AsyncM3u8 {
 
                         fs.writeFile(path.join(__dirname, filePath), buff, (writeErr) => {
                             if (writeErr) {
-                                console.log('errr = ', writeErr);
-                                reject(writeErr)
+                                reject(writeErr);
                             } else {
+                                bar.increment();
                                 resolve(fileName);
                             }
                         });
@@ -99,6 +106,7 @@ class AsyncM3u8 {
         }
         const all = tsURLList.map(mapToRequestPromise);
         const downloadedFiles = await Promise.all(all);
+        bar.stop();
         return downloadedFiles;
     }
 
@@ -107,8 +115,10 @@ class AsyncM3u8 {
             return `file ${t}`
         }).join('\n');
 
+        const filelistPath = path.join(__dirname, `${folder}/filelist.txt`);
+
         await new Promise((resolve, reject) => {
-            fs.writeFile(path.join(__dirname, `${folder}/filelist.txt`), fileContent, (writeErr) => {
+            fs.writeFile(filelistPath, fileContent, (writeErr) => {
                 if (writeErr) {
                     console.log('errr = ', writeErr);
                     reject(writeErr)
@@ -116,7 +126,10 @@ class AsyncM3u8 {
                     resolve(`${folder}/filelist.txt`);
                 }
             });
-        })
+        });
+        const mp4Path = path.join(__dirname, `${folder}/output.mp4`);
+        await exec(`ffmpeg -f concat -safe 0 -i ${filelistPath}  -acodec copy -vcodec copy -absf aac_adtstoasc ${mp4Path}`);
+        return mp4Path;
     }
 }
 
