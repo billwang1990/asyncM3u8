@@ -89,7 +89,8 @@ class AsyncM3u8 {
                 this.limitedRequest(opt, (err, response, buff) => {
                     // console.log('Complete ', link);
                     if (err) {
-                        reject(err);
+                        // reject(err);
+                        resolve();
                     } else if (response.statusCode === 200) {
                         const tmp = link.split('/');
                         const fileName = tmp[tmp.length - 1];
@@ -97,7 +98,8 @@ class AsyncM3u8 {
 
                         fs.writeFile(filePath, buff, (writeErr) => {
                             if (writeErr) {
-                                reject(writeErr);
+                                // reject(writeErr);
+                                resolve();
                             } else {
                                 bar.increment();
                                 resolve(fileName);
@@ -110,7 +112,7 @@ class AsyncM3u8 {
         const all = tsURLList.map(mapToRequestPromise);
         const downloadedFiles = await Promise.all(all);
         bar.stop();
-        return downloadedFiles;
+        return downloadedFiles.filter((f) => {return f != null; });
     }
 
     async convertTsToMP4(tsList, folder) {
