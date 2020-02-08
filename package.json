@@ -1,6 +1,6 @@
 {
   "name": "asyncm3u8",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Async m3u8 downloader for NodeJS",
   "main": "index.js",
   "scripts": {
