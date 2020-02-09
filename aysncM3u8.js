@@ -7,12 +7,9 @@ const Bottleneck = require('bottleneck');
 const exec = require('child_process').exec; 
 const cliProgress = require('cli-progress');
 
-const requestLimiter = new Bottleneck({
-    minTime: 333 //one request per 333ms
-});
-
 class AsyncM3u8 {
-    constructor(url, downloadPath) {
+    constructor(url, options) {
+        const {downloadPath, throttleRequestMs = 333} = options;
         this.m3u8Url = url;
 
         const videoPath = path.join(downloadPath, md5(url));
@@ -22,7 +19,9 @@ class AsyncM3u8 {
         }
 
         this.folder = videoPath;
-
+        const requestLimiter = new Bottleneck({
+            minTime: throttleRequestMs //one request per 333ms
+        });
         const limitedRequest = requestLimiter.wrap(request.get);
         this.limitedRequest = limitedRequest;
     }

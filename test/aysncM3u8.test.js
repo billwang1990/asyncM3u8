@@ -9,7 +9,7 @@ describe('Testing async m38u downloader', () => {
 
     let aysncM3u8;
     beforeEach(() => {
-        aysncM3u8 = new AysncM3u8(m3u8LinkForTesting, './fakepath');
+        aysncM3u8 = new AysncM3u8(m3u8LinkForTesting, { downloadPath: './fakepath' });
         aysncM3u8.limitedRequest = jest.fn();
         fs.writeFile.mockReset();
     });
