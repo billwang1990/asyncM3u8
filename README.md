@@ -7,6 +7,22 @@ An async m3u8 downloader for Node.js, based on ffmpeg.
 
 ### Usage
 
+First, install the package:
+
+```
+yarn add asyncm3u8
+```
+
+Or:
+
+```
+npm install asyncm3u8
+```
+
+
+
+Then: 
+
 ```
 const AsymM3u8 = require('asyncm3u8');
 
